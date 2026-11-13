@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>1992年東涌調查T03田野筆記</title>
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/MarkerCluster.css">
+<link rel="stylesheet" href="css/MarkerCluster.Default.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:"Times New Roman","SimSun","宋體","NSimSun",serif;
+  color:#000;background:#F0E68C;display:flex;flex-direction:column;overflow:hidden;
+}
+/* ---------- header ---------- */
+#app-header{flex:0 0 auto;background:#4E342E;color:#fff;padding:10px 16px 11px;box-shadow:0 2px 6px rgba(0,0,0,.18);z-index:1200;position:relative}
+/* interface switch buttons (added) */
+#app-header .iface-nav{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;gap:8px}
+#app-header .iface-nav a{
+  font:600 12.5px/1 "Times New Roman","SimSun","宋體","NSimSun",serif;color:#fff;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);
+  border-radius:3px;padding:7px 12px;text-decoration:none;letter-spacing:.03em;white-space:nowrap;
+}
+#app-header .iface-nav a:hover{background:rgba(255,255,255,.28)}
+/* font-size adjuster 大/中/細 (added) */
+#app-header .iface-nav .fsz-btn{
+  font:600 12.5px/1 "Times New Roman","SimSun","宋體","NSimSun",serif;color:#fff;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);
+  border-radius:3px;padding:7px 9px;cursor:pointer;
+}
+#app-header .iface-nav .fsz-btn:hover{background:rgba(255,255,255,.28)}
+#app-header .iface-nav .fsz-btn.active{background:#fff;color:#4E342E;border-color:#fff}
+body[data-fsz="L"] #panel-filters,body[data-fsz="L"] #panel-right{zoom:1.18}
+body[data-fsz="S"] #panel-filters,body[data-fsz="S"] #panel-right{zoom:.85}
+#app-header h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.02em;line-height:1.25}
+#app-header .sub{margin:3px 0 0;font-size:11.5px;opacity:.88;letter-spacing:.02em}
+/* ---------- 3-column workspace: filters | map | right(vos+meta) ---------- */
+#app{
+  flex:1 1 auto;min-height:0;display:grid;gap:0;
+  grid-template-columns:264px minmax(0,1fr) 400px;
+  grid-template-areas:"filters map right";
+  overflow:hidden;
+}
+.side{
+  display:flex;flex-direction:column;min-height:0;min-width:0;
+  background:#F0E68C;
+  color:#000;
+}
+#panel-filters{grid-area:filters;border-right:1px solid #d7e3ee}
+#panel-right{grid-area:right;border-left:1px solid #d7e3ee;overflow:hidden}
+.panel-head{flex:0 0 auto;padding:8px 10px 6px;background:rgba(78,52,46,.16);border-bottom:1px solid rgba(78,52,46,.28)}
+.panel-head h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#000}
+.panel-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:11px 12px 16px;color:#000}
+/* scrollbars */
+.panel-body::-webkit-scrollbar,#vos-body::-webkit-scrollbar{width:9px}
+.panel-body::-webkit-scrollbar-thumb,#vos-body::-webkit-scrollbar-thumb{background:#b9cfd8;border-radius:5px}
+.panel-body::-webkit-scrollbar-thumb:hover,#vos-body::-webkit-scrollbar-thumb:hover{background:#8fadb9}
+/* ---------- filters ---------- */
+.block{margin-bottom:16px}
+.block > h3{margin:0 0 7px;font-size:11.5px;font-weight:700;color:#000;letter-spacing:.04em;background:rgba(78,52,46,.16);padding:5px 8px;border-radius:4px}
+.check-list{display:flex;flex-direction:column;gap:1px}
+.ck{
+  display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:4px;cursor:pointer;
+  font-size:12.5px;line-height:1.3;color:#000;
+}
+.ck:hover{background:rgba(78,52,46,.07)}
+.ck input{flex:0 0 auto;margin:0;accent-color:#4E342E;width:14px;height:14px}
+.ck .lbl{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ck .num{flex:0 0 auto;font-size:10.5px;color:#000;background:rgba(78,52,46,.12);border-radius:9px;padding:1px 6px}
+.ck .fn{display:block;font-size:10px;color:#000;white-space:normal}
+.btn-row{display:flex;gap:6px;margin-top:9px}
+.btn-row button{
+  flex:1 1 0;font:inherit;font-size:11.5px;padding:6px 4px;cursor:pointer;color:#000;
+  background:#fff;border:1px solid rgba(78,52,46,.40);border-radius:4px;transition:background .15s,color .15s;
+}
+.btn-row button:hover{background:rgba(78,52,46,.20);color:#000;border-color:rgba(78,52,46,.45)}
+.count{margin:9px 0 0;font-size:11.5px;color:#000;font-weight:600}
+.count b{color:#000}
+/* ---------- map ---------- */
+#panel-map{grid-area:map;position:relative;min-height:0;min-width:0;overflow:hidden;background:#dfe7ec}
+#map{position:absolute;inset:0}
+#map-badge{
+  position:absolute;left:10px;bottom:10px;z-index:600;pointer-events:none;
+  background:rgba(255,255,255,.92);border:1px solid #b9cfd8;border-radius:4px;
+  padding:4px 8px;font-size:11px;color:#22404a;box-shadow:0 1px 3px rgba(0,0,0,.15)
+}
+/* Map Tips (hover tooltip) */
+.leaflet-tooltip.maptip{
+  padding:0;border:1px solid #9fb9c6;border-radius:4px;background:#fff;color:#000;
+  box-shadow:0 3px 10px rgba(0,0,0,.22);white-space:normal;max-width:360px;
+}
+.leaflet-tooltip.maptip h3{margin:0 0 4px;font-size:14px;font-weight:700;color:#4E342E;line-height:1.25}
+.leaflet-tooltip.maptip hr{border:0;border-top:1px solid #dbe7ef;margin:6px 0}
+.leaflet-tooltip.maptip b{display:block;margin-top:6px;font-size:11.5px;color:#4E342E;letter-spacing:.02em}
+.leaflet-tooltip.maptip div[style*="pre-line"]{font-size:11.5px;color:#222}
+/* selected marker halo */
+@keyframes haloPulse{
+  0%{opacity:.85;stroke-width:2.5}
+  70%{opacity:0;stroke-width:7}
+  100%{opacity:0;stroke-width:7}
+}
+.halo{animation:haloPulse 1.7s ease-out infinite}
+/* ---------- right column: switchable VOSviewer / Metadata ---------- */
+#right-tabs{
+  flex:0 0 auto;display:flex;gap:2px;padding:6px 6px 0;
+  background:rgba(78,52,46,.10);
+  border-bottom:1px solid rgba(78,52,46,.28);
+}
+.rtab{
+  flex:1 1 0;font:inherit;font-size:10.5px;font-weight:700;letter-spacing:.05em;color:#000;
+  background:rgba(255,255,255,.55);border:1px solid rgba(78,52,46,.30);border-bottom:0;
+  border-radius:5px 5px 0 0;padding:7px 4px 6px;cursor:pointer;text-transform:uppercase;
+  transition:background .15s,color .15s;
+}
+.rtab:hover{background:#fff;color:#000}
+.rtab.active{background:#fff;color:#000;box-shadow:0 -2px 0 #4E342E inset;font-weight:800}
+.rtab:focus-visible{outline:2px solid #4E342E;outline-offset:-2px}
+#right-stack{flex:1 1 auto;min-height:0;position:relative}
+#right-stack .pane{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#right-stack .pane.off{visibility:hidden;pointer-events:none}
+#vos-body{padding:9px 10px 10px;display:flex;flex-direction:column;overflow:hidden}
+#vos-title{flex:0 0 auto;font-size:13px;font-weight:700;color:#000;line-height:1.3}
+#vos-hint{flex:0 0 auto;margin:2px 0 6px;font-size:10.5px;color:#000;line-height:1.4}
+#vos-frame{flex:1 1 auto;width:100%;min-height:200px;border:1px solid #c3d6e2;border-radius:3px;background:#fff}
+/* ---------- metadata ---------- */
+#meta-body{padding:10px 12px 18px}
+#meta-empty{font-size:12px;color:#000;line-height:1.6;margin:0}
+.meta-name{font-size:15px;font-weight:700;color:#000;margin:0 0 2px;line-height:1.35}
+.meta-id{font-size:10.5px;color:#000;margin:0 0 10px;letter-spacing:.03em}
+table.meta{width:100%;border-collapse:collapse;table-layout:fixed}
+table.meta th,table.meta td{
+  border-bottom:1px solid #dbe7ef;padding:6px 4px;vertical-align:top;
+  font-size:11.5px;line-height:1.5;word-break:break-word;overflow-wrap:anywhere;
+}
+table.meta th{width:38%;text-align:left;font-weight:600;color:#000;background:rgba(78,52,46,.07)}
+table.meta td{color:#000}
+table.meta td a{color:#000;text-decoration:underline;word-break:break-all}
+table.meta tr:last-child th,table.meta tr:last-child td{border-bottom:0}
+/* ---------- tablet ---------- */
+@media (max-width:1100px){
+  #app{
+    grid-template-columns:226px minmax(0,1fr);
+    grid-template-rows:minmax(0,56%) minmax(0,44%);
+    grid-template-areas:"map map" "filters right";
+  }
+  #panel-map{border-bottom:1px solid #d7e3ee}
+  #panel-right{border-left:1px solid #d7e3ee}
+}
+/* ---------- mobile ---------- */
+@media (max-width:720px){
+  body{display:flex;flex-direction:column;height:auto;overflow:auto;background:#F0E68C}
+  #app{display:flex;flex-direction:column;flex:0 0 auto;height:auto;overflow:visible}
+  #panel-map{order:1;height:52vh;min-height:300px;border-bottom:1px solid #d7e3ee}
+  #panel-filters{order:2;border-bottom:1px solid #d7e3ee;border-right:0}
+  #panel-right{order:3;border-left:0;height:auto;overflow:visible}
+  #panel-filters .panel-body{max-height:46vh}
+  #right-tabs{padding:8px 10px 0}
+  .rtab{font-size:10px;padding:8px 4px 7px}
+  #right-stack{position:static;flex:0 0 auto;height:auto}
+  #right-stack .pane{position:static;height:auto;overflow:visible}
+  #right-stack .pane.off{display:none;visibility:visible}
+  #vos-body{display:block;overflow:visible}
+  #vos-frame{height:54vh;min-height:320px;display:block}
+  #meta-body{overflow:visible}
+  .panel-head{padding:10px 14px 6px}
+  .panel-body{padding:10px 14px 16px}
+  #app-header h1{font-size:15.5px}
+}
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <h1>1992年東涌調查T03田野筆記</h1>
+  <nav class="iface-nav">
+    <a href="index_v1.html">⟵ 切換介面</a>
+    <a href="b21.html">照片定位（Box B21）</a>
+  </nav>
+</header>
+
+<main id="app">
+
+  <!-- ========== 1. FILTERS ========== -->
+  <section id="panel-filters" class="side">
+    <div class="panel-head"><h2>Filters 篩選</h2></div>
+    <div class="panel-body">
+      <div class="block">
+        <h3>村落 Village name</h3>
+        <div id="village-list" class="check-list"></div>
+        <div class="btn-row">
+          <button id="btn-all" type="button">Select all</button>
+          <button id="btn-clear" type="button">Clear</button>
+        </div>
+        <p class="count" id="record-count">顯示 <b>0</b> / 0 筆記錄</p>
+      </div>
+
+      <div class="block">
+        <h3>Raster 底圖</h3>
+        <label class="ck"><input type="checkbox" id="raster-opm" checked>
+          <span class="lbl">正射影像地圖<span class="fn">OPM100_2025_0.png</span></span>
+        </label>
+        <label class="ck"><input type="checkbox" id="raster-sea" checked>
+          <span class="lbl">數碼地形圖 A<span class="fn">9SEA_1.png</span></span>
+        </label>
+        <label class="ck"><input type="checkbox" id="raster-seb" checked>
+          <span class="lbl">數碼地形圖 B<span class="fn">9SEB_2.png</span></span>
+        </label>
+        <label class="ck"><input type="checkbox" id="raster-sec" checked>
+          <span class="lbl">數碼地形圖 C<span class="fn">9SEC_3.png</span></span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 2. MAP ========== -->
+  <section id="panel-map">
+    <div id="map"></div>
+    <div id="map-badge">尚未選擇村落</div>
+  </section>
+
+  <!-- ========== 3. RIGHT COLUMN: switchable VOSviewer / Metadata ========== -->
+  <aside id="panel-right" class="side">
+
+    <div id="right-tabs" role="tablist" aria-label="右欄檢視切換">
+      <button type="button" class="rtab active" data-pane="vos" role="tab" aria-selected="true" aria-controls="pane-vos">VOSviewer</button>
+      <button type="button" class="rtab" data-pane="meta" role="tab" aria-selected="false" aria-controls="pane-meta">Metadata 屬性資料</button>
+    </div>
+
+    <div id="right-stack">
+
+      <section class="pane" id="pane-vos" role="tabpanel" aria-label="VOSviewer">
+        <div class="panel-body" id="vos-body">
+          <div id="vos-title">村落詞語共現網絡</div>
+          <p id="vos-hint">點選地圖上的村落，載入其詞語共現網絡。</p>
+          <iframe id="vos-frame" src="about:blank" title="VOSviewer network"></iframe>
+        </div>
+      </section>
+
+      <section class="pane off" id="pane-meta" role="tabpanel" aria-label="Metadata 屬性資料">
+        <div class="panel-body" id="meta-body">
+          <p id="meta-empty">尚未選擇村落。<br>請在地圖上點選一個黃色圓點，這裡會列出該筆記錄的全部欄位。</p>
+        </div>
+      </section>
+
+    </div>
+
+  </aside>
+
+</main>
+
+<script src="js/leaflet.js"></script>
+<script src="js/leaflet.markercluster.js"></script>
+<script src="data/village_text_points_4.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------------
+     DATA SOURCE — read directly from window.json.features.
+     The qgis2web export exposes the collection as a global variable
+     named json_village_text_points_4; we alias it to window.json so the
+     page always works off window.json.features (no data file edited).
+  ------------------------------------------------------------------ */
+  if (!(window.json && window.json.features)) {
+    if (window.json_village_text_points_4 && window.json_village_text_points_4.features) {
+      window.json = window.json_village_text_points_4;
+    }
+  }
+  if (!window.json || !window.json.features) {
+    console.error("window.json.features not found");
+    return;
+  }
+  var FEATURES = window.json.features;
+
+  /* ---------------- raster definitions (same files / bounds as export) --------------- */
+  var RASTERS = {
+    opm: [{
+      url: "data/OPM100_2025_0.png",
+      bounds: [[22.076205181083964, 113.75167100210537], [22.624727555473488, 114.51155829843452]]
+    }],
+    topo: [
+      { url: "data/9SEA_1.png", bounds: [[22.273607952312364, 113.89769308407159], [22.300758044667496, 113.93413201704129]] },
+      { url: "data/9SEB_2.png", bounds: [[22.27366640132881, 113.93408524462212], [22.300808410150857, 113.9705172786357]] },
+      { url: "data/9SEC_3.png", bounds: [[22.246516297786957, 113.89774686844221], [22.27366640132881, 113.93417871714662]] }
+    ]
+  };
+
+  var BASE_STYLE = {
+    radius: 5, opacity: 1, color: "rgba(35,35,35,1.0)", weight: 1,
+    fill: true, fillOpacity: 1, fillColor: "rgba(243,255,0,1.0)"
+  };
+  var ACTIVE_STYLE = {
+    radius: 10, opacity: 1, color: "#D50000", weight: 3.5,
+    fill: true, fillOpacity: 1, fillColor: "#FFB300"
+  };
+
+  /* ================================ MAP ================================ */
+  var map = L.map("map", {
+    zoomControl: true, maxZoom: 28, minZoom: 1,
+    attributionControl: true
+  }).fitBounds([[22.22698314849131, 113.87388478711947], [22.301188134136307, 114.01199783732449]]);
+
+  map.attributionControl.setPrefix(
+    '<a href="https://github.com/qgis2web/qgis2web" target="_blank" rel="noopener">qgis2web</a> &middot; ' +
+    '<a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; ' +
+    '<a href="https://qgis.org">QGIS</a>'
+  );
+
+  /* panes so rasters stay under the points / halo */
+  map.createPane("pane_opm");
+  map.getPane("pane_opm").style.zIndex = 400;
+  map.createPane("pane_topo");
+  map.getPane("pane_topo").style.zIndex = 401;
+  map.createPane("pane_halo");
+  map.getPane("pane_halo").style.zIndex = 450;
+  map.createPane("pane_points");
+  map.getPane("pane_points").style.zIndex = 460;
+
+  function makeGroup(defs, pane) {
+    var g = L.layerGroup();
+    defs.forEach(function (d) {
+      L.imageOverlay(d.url, d.bounds, { pane: pane, interactive: false }).addTo(g);
+    });
+    return g;
+  }
+  var layerOPM = makeGroup(RASTERS.opm, "pane_opm");
+  /* topo maps split into three independently toggleable layers */
+  var layerSEA = makeGroup([RASTERS.topo[0]], "pane_topo");
+  var layerSEB = makeGroup([RASTERS.topo[1]], "pane_topo");
+  var layerSEC = makeGroup([RASTERS.topo[2]], "pane_topo");
+  layerOPM.addTo(map);
+  layerSEA.addTo(map);
+  layerSEB.addTo(map);
+  layerSEC.addTo(map);
+
+  /* ============================ CLUSTERING ============================ */
+  /* A fresh cluster group is built on every refresh instead of calling
+     clearLayers(): markercluster's clearLayers() calls off() with an
+     unbound handler, which floods the console with warnings on Leaflet 1.9. */
+  function newCluster() {
+    return L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      maxClusterRadius: 46,
+      disableClusteringAtZoom: 20
+    });
+  }
+  var cluster = newCluster();
+  map.addLayer(cluster);
+
+  var halos = L.layerGroup().addTo(map);
+  var markersById = {};      // fid -> circleMarker
+  var selectedFid = null;
+
+  function haloFor(latlng) {
+    var c = L.circleMarker(latlng, {
+      pane: "pane_halo", radius: 18, weight: 2.5, color: "#D50000",
+      opacity: 1, fill: false, interactive: false, className: "halo"
+    });
+    halos.addLayer(c);
+    return c;
+  }
+
+  /* ============================ SELECTION ============================ */
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function isUrl(v) { return /^https?:\/\//i.test(String(v)); }
+
+  function renderMetadata(props) {
+    var box = document.getElementById("meta-body");
+    var keys = Object.keys(props);
+    var html = '<p class="meta-name">' + escapeHtml(props.village_name || "（未命名村落）") + "</p>";
+    html += '<p class="meta-id">' + keys.length + " 個欄位・fid " + escapeHtml(props.fid || "-") + "</p>";
+    html += '<table class="meta">';
+    keys.forEach(function (k) {
+      var v = props[k];
+      var cell;
+      if (v === null || v === undefined || v === "") {
+        cell = '<span style="color:#000">—</span>';
+      } else if (isUrl(v)) {
+        cell = '<a href="' + escapeHtml(v) + '" target="_blank" rel="noopener">' + escapeHtml(v) + "</a>";
+      } else {
+        cell = escapeHtml(v);
+      }
+      html += "<tr><th>" + escapeHtml(k) + "</th><td>" + cell + "</td></tr>";
+    });
+    html += "</table>";
+    box.innerHTML = html;
+    box.scrollTop = 0;
+  }
+
+  function selectFeature(feature, layer) {
+    var props = feature.properties || {};
+    selectedFid = props.fid;
+
+    /* highlight */
+    Object.keys(markersById).forEach(function (id) {
+      markersById[id].setStyle(id === selectedFid ? ACTIVE_STYLE : BASE_STYLE);
+      if (id === selectedFid) markersById[id].bringToFront();
+    });
+    halos.clearLayers();
+    if (layer && layer.getLatLng) haloFor(layer.getLatLng());
+
+    /* badge */
+    document.getElementById("map-badge").textContent =
+      (props.village_name || "未命名村落") + "・" + (props.village_id || "");
+
+    /* metadata */
+    renderMetadata(props);
+
+    /* vosviewer */
+    var vt = document.getElementById("vos-title");
+    var vh = document.getElementById("vos-hint");
+    var frame = document.getElementById("vos-frame");
+    vt.textContent = props.village_name || "村落詞語共現網絡";
+    if (!props.vos_url) {
+      vh.textContent = "此記錄沒有 vos_url，無法載入網絡。";
+      frame.src = "about:blank";
+      return;
+    }
+    var url;
+    try { url = new URL(String(props.vos_url)); }
+    catch (e) { vh.textContent = "vos_url 格式不正確。"; frame.src = "about:blank"; return; }
+    if (url.origin !== "https://app.vosviewer.com") {
+      vh.textContent = "vos_url 不是 VOSviewer 網址，已略過。";
+      frame.src = "about:blank";
+      return;
+    }
+    url.searchParams.set("simple_ui", "true");
+    vh.textContent = "正在顯示「" + (props.village_name || "已選村落") + "」的詞語共現網絡。";
+    frame.src = url.toString();
+    /* on mobile the hidden pane has zero width, so the network must be
+       re-requested once the VOSviewer tab becomes visible */
+    if (vosPaneHidden() && frame.clientWidth === 0) vosNeedsReload = true;
+  }
+
+  function clearSelection() {
+    selectedFid = null;
+    Object.keys(markersById).forEach(function (id) { markersById[id].setStyle(BASE_STYLE); });
+    halos.clearLayers();
+    document.getElementById("map-badge").textContent = "尚未選擇村落";
+    document.getElementById("meta-body").innerHTML =
+      '<p id="meta-empty">尚未選擇村落。<br>請在地圖上點選一個黃色圓點，這裡會列出該筆記錄的全部欄位。</p>';
+    document.getElementById("vos-title").textContent = "村落詞語共現網絡";
+    document.getElementById("vos-hint").textContent = "點選地圖上的村落，載入其詞語共現網絡。";
+    document.getElementById("vos-frame").src = "about:blank";
+  }
+
+  /* ============================= MARKERS ============================= */
+  /* ---- Map Tips (hover), mirroring the QGIS "Show Map Tips" HTML ---- */
+  function mapTipHtml(p) {
+    return '<div style="width:330px;padding:8px;font-family:Times New Roman,SimSun,serif;line-height:1.5;">' +
+      "<h3>" + escapeHtml(p.village_name || "") + "</h3>" +
+      "<div>Village ID: " + escapeHtml(p.village_id || "") + "</div><hr>" +
+      "<b>Voyant — Top Keywords</b>" +
+      '<div style="white-space:pre-line">' + escapeHtml(p.top_terms || "") + "</div>" +
+      "<b>Voyant — Collocates</b>" +
+      '<div style="white-space:pre-line">' + escapeHtml(p.collocates || "") + "</div>" +
+      "</div>";
+  }
+
+  function buildMarker(feature) {
+    var coords = feature.geometry.coordinates;
+    var style = Object.assign({}, BASE_STYLE, { pane: "pane_points" });
+    var m = L.circleMarker([coords[1], coords[0]], style);
+    m.feature = feature;
+    m.bindTooltip(mapTipHtml(feature.properties), {
+      direction: "top", offset: [0, -9], opacity: 1, className: "maptip",
+      sticky: false, interactive: false
+    });
+    m.bindPopup(
+      '<strong style="font-size:13px">' + escapeHtml(feature.properties.village_name || "") + "</strong>" +
+      '<br><span style="font-size:11px;color:#555">' + escapeHtml(feature.properties.village_id || "") + "</span>" +
+      '<br><span style="font-size:11px;color:#0b6fa4">點擊查看完整資料與網絡</span>',
+      { maxWidth: 220 }
+    );
+    m.on("click", function () { selectFeature(feature, m); });
+    m.on("popupopen", function () { selectFeature(feature, m); });
+    markersById[feature.properties.fid] = m;
+    return m;
+  }
+
+  /* ============================== FILTERS ============================== */
+  var firstRefresh = true;
+  var villages = [];                 // [{name, count, fids:[]}]
+  (function collectVillages() {
+    var index = {};
+    FEATURES.forEach(function (f) {
+      var p = f.properties || {};
+      var name = p.village_name || "（未命名）";
+      if (!index[name]) {
+        index[name] = { name: name, count: 0, fids: [] };
+        villages.push(index[name]);
+      }
+      index[name].count++;
+      index[name].fids.push(p.fid);
+    });
+  })();
+
+  var listEl = document.getElementById("village-list");
+  villages.forEach(function (v) {
+    var label = document.createElement("label");
+    label.className = "ck";
+    label.innerHTML =
+      '<input type="checkbox" class="village-ck" value="' + escapeHtml(v.name) + '" checked>' +
+      '<span class="lbl">' + escapeHtml(v.name) + "</span>" +
+      '<span class="num">' + v.count + "</span>";
+    listEl.appendChild(label);
+  });
+
+  function activeVillages() {
+    return Array.prototype.slice.call(document.querySelectorAll(".village-ck"))
+      .filter(function (c) { return c.checked; })
+      .map(function (c) { return c.value; });
+  }
+
+  function refresh() {
+    var active = activeVillages();
+    var set = {};
+    active.forEach(function (n) { set[n] = true; });
+
+    /* rebuild the cluster layer (avoids markercluster clearLayers warnings) */
+    map.removeLayer(cluster);
+    cluster = newCluster();
+    map.addLayer(cluster);
+    halos.clearLayers();
+    markersById = {};
+
+    var shown = FEATURES.filter(function (f) {
+      return set[f.properties.village_name || "（未命名）"];
+    });
+
+    shown.forEach(function (f) { cluster.addLayer(buildMarker(f)); });
+
+    document.getElementById("record-count").innerHTML =
+      "顯示 <b>" + shown.length + "</b> / " + FEATURES.length + " 筆記錄";
+
+    /* after a filter change, zoom so every remaining village is visible */
+    if (!firstRefresh) {
+      if (shown.length) {
+        map.fitBounds(cluster.getBounds().pad(0.25), { animate: true });
+      }
+    } else {
+      firstRefresh = false;
+    }
+
+    /* keep selection only if still visible */
+    if (selectedFid !== null) {
+      var stillThere = shown.some(function (f) { return f.properties.fid === selectedFid; });
+      if (!stillThere) clearSelection();
+    }
+  }
+
+  listEl.addEventListener("change", function (e) {
+    if (e.target.classList.contains("village-ck")) refresh();
+  });
+  document.getElementById("btn-all").addEventListener("click", function () {
+    document.querySelectorAll(".village-ck").forEach(function (c) { c.checked = true; });
+    refresh();
+  });
+  document.getElementById("btn-clear").addEventListener("click", function () {
+    document.querySelectorAll(".village-ck").forEach(function (c) { c.checked = false; });
+    refresh();
+  });
+
+  /* ============================== RASTERS ============================== */
+  document.getElementById("raster-opm").addEventListener("change", function (e) {
+    if (e.target.checked) { if (!map.hasLayer(layerOPM)) map.addLayer(layerOPM); }
+    else { map.removeLayer(layerOPM); }
+  });
+  /* each topo map sheet has its own toggle */
+  [["raster-sea", layerSEA], ["raster-seb", layerSEB], ["raster-sec", layerSEC]]
+  .forEach(function (pair) {
+    document.getElementById(pair[0]).addEventListener("change", function (e) {
+      if (e.target.checked) { if (!map.hasLayer(pair[1])) map.addLayer(pair[1]); }
+      else { map.removeLayer(pair[1]); }
+    });
+  });
+
+  /* ============== RIGHT COLUMN: switch VOSviewer / Metadata ============== */
+  var vosNeedsReload = false;
+  function vosPaneHidden() { return document.getElementById("pane-vos").classList.contains("off"); }
+  (function rightTabs() {
+    var bar = document.getElementById("right-tabs");
+    var panes = { vos: document.getElementById("pane-vos"), meta: document.getElementById("pane-meta") };
+    if (!bar || !panes.vos || !panes.meta) return;
+    function show(key) {
+      Object.keys(panes).forEach(function (k) { panes[k].classList.toggle("off", k !== key); });
+      Array.prototype.forEach.call(bar.querySelectorAll(".rtab"), function (b) {
+        var on = b.getAttribute("data-pane") === key;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      if (key === "vos" && vosNeedsReload) {
+        var f = document.getElementById("vos-frame");
+        var s = f.getAttribute("src");
+        if (s && s !== "about:blank") f.src = s;
+        vosNeedsReload = false;
+      }
+    }
+    Array.prototype.forEach.call(bar.querySelectorAll(".rtab"), function (b) {
+      b.addEventListener("click", function () { show(b.getAttribute("data-pane")); });
+    });
+  })();
+
+  /* ============================ INIT / RESIZE ============================ */
+  refresh();
+  setTimeout(function () { map.invalidateSize(); }, 120);
+  window.addEventListener("resize", function () { map.invalidateSize(); });
+  window.addEventListener("orientationchange", function () {
+    setTimeout(function () { map.invalidateSize(); }, 250);
+  });
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { map.invalidateSize(); })
+      .observe(document.getElementById("panel-map"));
+  }
+})();
+</script>
+<script>
+/* font-size adjuster: 大 / 中 / 細 buttons in the header (added) */
+(function(){
+  var KEY = "fsz-t03";
+  var nav = document.querySelector(".iface-nav");
+  if (!nav) return;
+  function apply(k, save) {
+    document.body.setAttribute("data-fsz", k);
+    nav.querySelectorAll(".fsz-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-fsz") === k);
+    });
+    if (save) { try { localStorage.setItem(KEY, k); } catch (e) {} }
+    if (window.map && map.invalidateSize) setTimeout(function () { map.invalidateSize(); }, 80);
+  }
+  ["S", "M", "L"].forEach(function (k) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "fsz-btn";
+    b.setAttribute("data-fsz", k);
+    b.textContent = { L: "大", M: "中", S: "細" }[k];
+    b.addEventListener("click", function () { apply(k, true); });
+    nav.insertBefore(b, nav.children[1] || null);  /* right of the 切換介面 button */
+  });
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved || "M", false);
+})();
+</script>
+</body>
+</html>

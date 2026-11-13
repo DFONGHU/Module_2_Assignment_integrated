@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1992年東涌調查Box B21照片定位</title>
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/MarkerCluster.css">
+<link rel="stylesheet" href="css/MarkerCluster.Default.css">
+<style>
+:root{
+  --header-h:56px;
+  --green:#00785D;
+  --panel-grad:linear-gradient(180deg,#F0E68C 0%,#F0E68C 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:"Times New Roman","SimSun","宋體","NSimSun",serif;
+  color:#000;background:#F0E68C;
+  display:flex;flex-direction:column;
+}
+/* ---------- Header ---------- */
+header{
+  height:var(--header-h);
+  background:#4E342E;   /* 深啡色，配合封面頁 */
+  color:#fff;
+  display:flex;align-items:center;
+  padding:0 18px;
+  flex:0 0 auto;
+  box-shadow:0 2px 6px rgba(0,0,0,.25);
+  z-index:1100;
+}
+header h1{font-size:20px;font-weight:700;letter-spacing:.5px;}
+header .subtitle{margin-left:14px;font-size:12px;opacity:.85;}
+/* interface switch buttons (added) */
+header .iface-nav{margin-left:auto;display:flex;gap:8px;flex:0 0 auto}
+header .iface-nav a{
+  font:600 12.5px/1 "Times New Roman","SimSun","宋體","NSimSun",serif;color:#fff;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);
+  border-radius:3px;padding:7px 12px;text-decoration:none;letter-spacing:.03em;white-space:nowrap;
+}
+header .iface-nav a:hover{background:rgba(255,255,255,.28)}
+/* font-size adjuster 大/中/細 (added) */
+header .iface-nav .fsz-btn{
+  font:600 12.5px/1 "Times New Roman","SimSun","宋體","NSimSun",serif;color:#fff;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.45);
+  border-radius:3px;padding:7px 9px;cursor:pointer;
+}
+header .iface-nav .fsz-btn:hover{background:rgba(255,255,255,.28)}
+header .iface-nav .fsz-btn.active{background:#fff;color:#4E342E;border-color:#fff}
+body[data-fsz="L"] #filterPanel,body[data-fsz="L"] #photoPanel{zoom:1.18}
+body[data-fsz="S"] #filterPanel,body[data-fsz="S"] #photoPanel{zoom:.85}
+/* ---------- Layout ---------- */
+.layout{
+  flex:1 1 auto;
+  display:grid;
+  grid-template-columns:300px minmax(0,1fr) 360px;
+  height:calc(100vh - var(--header-h));
+  min-height:0;
+}
+.panel{
+  background:var(--panel-grad);
+  color:#000;
+  overflow-y:auto;
+  padding:12px;
+  min-height:0;
+}
+.panel h2{
+  font-size:15px;color:#000;
+  background:rgba(78,52,46,.14);
+  border-bottom:2px solid rgba(78,52,46,.35);
+  padding:6px 8px;border-radius:4px;margin:0 0 10px;
+}
+/* ---------- Filters (left) ---------- */
+#filterPanel{border-right:1px solid #cfd8dc;}
+.filter-actions{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.filter-actions button, .group-actions button{
+  font-size:12px;padding:4px 10px;border:1px solid rgba(78,52,46,.45);
+  background:#fff;color:#000;border-radius:4px;cursor:pointer;
+}
+.filter-actions button:hover, .group-actions button:hover{background:rgba(78,52,46,.20);color:#000;}
+#recordCount{
+  font-size:13px;font-weight:700;color:#000;
+  margin-bottom:10px;padding:6px 8px;
+  background:rgba(78,52,46,.12);border-radius:4px;
+}
+.fgroup{margin-bottom:14px;}
+.fgroup .group-head{
+  display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;user-select:none;
+  padding:6px 8px;background:rgba(78,52,46,.16);
+  border-radius:4px;
+}
+.fgroup .group-head .gtitle{font-size:13px;font-weight:700;}
+.group-actions{display:flex;gap:4px;}
+.group-actions button{padding:2px 8px;font-size:11px;}
+.fgroup .group-body{
+  margin-top:6px;padding:0 4px;
+  max-height:200px;overflow-y:auto;
+}
+.fgroup.collapsed .group-body{display:none;}
+.fgroup label{
+  display:flex;align-items:flex-start;gap:6px;
+  font-size:12.5px;line-height:1.45;
+  padding:3px 2px;cursor:pointer;border-radius:3px;
+}
+.fgroup label:hover{background:rgba(78,52,46,.07);}
+.fgroup input{margin-top:2px;flex:0 0 auto;accent-color:#4E342E;}
+/* count pill, same style as t03.html village list */
+.fgroup label .glabel{flex:1 1 auto;min-width:0}
+.fgroup label .num{
+  flex:0 0 auto;margin-top:2px;
+  font-size:10.5px;color:#000;background:rgba(78,52,46,.12);
+  border-radius:9px;padding:1px 6px;
+}
+.raster-group{border-top:1px dashed #90a4ae;padding-top:10px;margin-top:4px;}
+.raster-group .group-head{cursor:default;}
+/* ---------- Map (center) ---------- */
+#mapPanel{padding:0;position:relative;background:#e8ecef;}
+#map{width:100%;height:100%;}
+/* ---------- Photo / metadata (right) ---------- */
+#photoPanel{border-left:1px solid #cfd8dc;}
+#photoBox{
+  width:100%;background:#fff;border:1px solid #b0bec5;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  min-height:180px;margin-bottom:12px;overflow:hidden;
+}
+#photoBox img{max-width:100%;max-height:320px;display:block;}
+.placeholder{color:#000;font-size:13px;padding:30px 10px;text-align:center;}
+#metaTable{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;}
+#metaTable th,#metaTable td{
+  border:1px solid #cfd8dc;padding:5px 7px;text-align:left;vertical-align:top;
+}
+#metaTable th{
+  width:110px;background:rgba(78,52,46,.14);color:#000;
+  font-weight:700;white-space:nowrap;
+}
+/* ---------- Selected marker highlight ---------- */
+.selected-marker{filter:drop-shadow(0 0 4px #ffd700);}
+/* ---------- Responsive ---------- */
+@media (max-width:1200px){
+  .layout{grid-template-columns:250px minmax(0,1fr) 300px;}
+  header h1{font-size:17px;}
+  header .subtitle{display:none;}
+}
+@media (max-width:900px){
+  .layout{
+    display:flex;flex-direction:column;
+    height:auto;min-height:calc(100vh - var(--header-h));
+  }
+  #mapPanel{order:1;height:55vh;flex:0 0 auto;}
+  #photoPanel{order:2;border-left:none;border-top:1px solid #cfd8dc;}
+  #filterPanel{order:3;border-right:none;border-top:1px solid #cfd8dc;}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>1992年東涌調查Box B21照片定位</h1>
+  <nav class="iface-nav">
+    <a href="index_v1.html">⟵ 切換介面</a>
+    <a href="t03.html">田野筆記（T03）</a>
+  </nav>
+</header>
+<div class="layout">
+  <!-- Left: Filters -->
+  <aside id="filterPanel" class="panel">
+    <h2>篩選 Filters</h2>
+    <div class="filter-actions">
+      <button id="btnAll" type="button">Select all</button>
+      <button id="btnClear" type="button">Clear</button>
+    </div>
+    <div id="recordCount">目前顯示記錄數：0 / 0</div>
+    <div id="filterGroups"></div>
+    <div class="fgroup raster-group" id="rasterGroup">
+      <div class="group-head">
+        <span class="gtitle">底圖 Raster</span>
+      </div>
+      <div class="group-body">
+        <label><input type="checkbox" class="raster-cb" data-raster="opm" checked> 正射影像地圖 (OPM100_2025_0.png)</label>
+        <label><input type="checkbox" class="raster-cb" data-raster="seb" checked> 數碼地形圖 (9SEB_1.png)</label>
+      </div>
+    </div>
+  </aside>
+  <!-- Center: Map -->
+  <main id="mapPanel">
+    <div id="map"></div>
+  </main>
+  <!-- Right: Photograph + Metadata -->
+  <aside id="photoPanel" class="panel">
+    <h2>照片及資料 Photograph + Metadata</h2>
+    <div id="photoBox"><div class="placeholder">請點選地圖上的照片標記以顯示照片</div></div>
+    <div id="metaWrap"><div class="placeholder">尚未選取任何記錄</div></div>
+  </aside>
+</div>
+
+<script src="js/leaflet.js"></script>
+<script src="js/leaflet.markercluster.js"></script>
+<script src="data/B21Notes__2.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---- data: prefer json_week5_table_tutorial_1, fallback to json_B21Notes__2 ---- */
+var fc = window.json_week5_table_tutorial_1 || window.json_B21Notes__2;
+var features = fc.features;
+
+var FIELDS = ['file_name','place_name','capture_date','photo_subject','latitude','longitude',
+              'location_precision','location_source','notes','location_note'];
+var FILTER_FIELDS = ['place_name','photo_subject','location_precision'];
+var FIELD_LABELS = {
+  file_name:'file_name', place_name:'place_name', capture_date:'capture_date',
+  photo_subject:'photo_subject', latitude:'latitude', longitude:'longitude',
+  location_precision:'location_precision', location_source:'location_source',
+  notes:'notes', location_note:'location_note'
+};
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function photoUrl(p){
+  if(!p) return null;
+  var name = String(p).replace(/[\\/:]/g,'_').trim();
+  return 'images/' + encodeURIComponent(name);
+}
+
+/* ================= Map ================= */
+var map = L.map('map',{zoomControl:false, maxZoom:28, minZoom:1})
+  .fitBounds([[22.274226751154405,113.92821910269542],[22.293540348530396,113.9641662809186]]);
+L.control.zoom({position:'topleft'}).addTo(map);
+L.control.scale({imperial:false}).addTo(map);
+
+var rasterLayers = {
+  opm: L.imageOverlay('data/OPM100_2025_0.png',
+        [[22.076205181083964,113.75167100210537],[22.624727555473488,114.51155829843452]],
+        {pane:'pane_opm'}),
+  seb: L.imageOverlay('data/9SEB_1.png',
+        [[22.27366640132881,113.93408524462212],[22.300808410150857,113.9705172786357]],
+        {pane:'pane_seb'})
+};
+map.createPane('pane_opm');  map.getPane('pane_opm').style.zIndex = 400;
+map.createPane('pane_seb');  map.getPane('pane_seb').style.zIndex = 401;
+map.createPane('pane_pts');  map.getPane('pane_pts').style.zIndex = 450;
+map.addLayer(rasterLayers.opm);
+map.addLayer(rasterLayers.seb);
+
+var highlightLayer = L.layerGroup().addTo(map);
+
+function baseStyle(){
+  return {pane:'pane_pts', radius:6, opacity:1, weight:2,
+          color:'#801119', fillColor:'#DB1E2A', fillOpacity:1};
+}
+function selectedStyle(){
+  return {pane:'pane_pts', radius:10, opacity:1, weight:4,
+          color:'#FFD700', fillColor:'#00785D', fillOpacity:1};
+}
+
+/* build one marker per feature */
+var markers = features.map(function(f,i){
+  var c = f.geometry.coordinates;           /* [lon,lat] */
+  var m = L.circleMarker([c[1],c[0]], baseStyle());
+  m._fid = i;
+  var p = f.properties;
+  m.bindTooltip(
+      '<div style="width:330px;padding:8px;font-family:Times New Roman,SimSun,serif;line-height:1.5;white-space:normal;">'
+    + '<h3 style="margin:0 0 4px;word-break:break-word;">' + esc(p.place_name || '') + '</h3>'
+    + '<div>Photo number: ' + esc(p.photo_no || '') + '</div><hr>'
+    + '<b>Photo Subject</b>'
+    + '<div style="white-space:pre-line">' + esc(p.photo_subject || '') + '</div>'
+    + '</div>',
+    {direction:'top', offset:[0,-8], sticky:false, opacity:1});
+  m.on('click', function(){ selectFeature(i, true); });
+  return m;
+});
+
+var cluster = new L.MarkerClusterGroup({showCoverageOnHover:false, spiderfyDistanceMultiplier:2,
+                                        pane:'pane_pts', maxClusterRadius:45});
+map.addLayer(cluster);
+
+/* ================= Filters ================= */
+var groupValues = {};   /* field -> [unique display group labels] */
+var groupCounts = {};   /* field -> {label: feature count} */
+var valueGroups = {};   /* field -> fn(raw value) -> [group labels] */
+var checkboxes = {};    /* field -> [input elements] */
+
+FILTER_FIELDS.forEach(function(field){
+  /* merged display groups (added): several raw values are shown as one group,
+     some raw values belong to two groups at once */
+  var MERGE = {
+    place_name: [
+      {g:'上嶺皮村', vals:['上嶺皮 12A 號（東涌鄉事委員會）','上嶺皮村村屋（望向逸東邨）','上嶺皮村舊村屋']},
+      {g:'下嶺皮村', vals:['下嶺皮村 36 號（三村聯合公所）','下嶺皮村、東涌堡及龍井頭（從裕逸樓天台俯拍）','下嶺皮村大王神龕','下嶺皮村小教場','下嶺皮村及東涌堡（從裕逸樓天台俯拍）','下嶺皮村灶頭及公園','下嶺皮村舊村屋及新西式建築']},
+      {g:'赤鱲角新村（赤立角村）', vals:['赤鱲角新村（赤立角村）天后廟','赤鱲角新村（赤立角村）牌樓及村屋']},
+      {g:'東涌堡', vals:['東涌堡','東涌堡炮台（望向逸東邨）']},
+      {g:'馬灣新村', vals:['馬灣新村門樓','馬灣新村門樓及村屋']},
+      {g:'富東邨', vals:['富東邨','富東邨（從赤立角村眺望）','富東邨及裕東苑']},
+      /* dual membership */
+      {g:'東涌堡', vals:['東涌堡／上嶺皮村村屋（望向逸東邨）','東涌堡炮台、上嶺皮村村屋及西式建築'], append:true},
+      {g:'上嶺皮村', vals:['東涌堡／上嶺皮村村屋（望向逸東邨）','東涌堡炮台、上嶺皮村村屋及西式建築'], append:true}
+    ],
+    photo_subject: [
+      {g:'fort', vals:['fort','fort (historic site)','fort & cannons','fort & village house','fort & western-style house']},
+      {g:'office building', vals:['office building (Rural Committee / fort)','office building (Rural Committee)']},
+      {g:'public housing estate', vals:['public & HOS estates','public housing estate','public housing estate (distant view)','public housing estate & mall']},
+      {g:'village archway', vals:['village archway','village entrance archway']},
+      {g:'village house', vals:['village house','village houses (old & new)']},
+      /* dual membership */
+      {g:'village archway', vals:['village archway & houses'], append:true},
+      {g:'village house', vals:['village archway & houses'], append:true}
+    ]
+  };
+  var mergeFor = MERGE[field] || [];
+  var valueToGroups = {};   /* raw value -> [group labels] */
+  mergeFor.forEach(function(m){
+    m.vals.forEach(function(v){
+      (valueToGroups[v] = valueToGroups[v] || []);
+      if (valueToGroups[v].indexOf(m.g) === -1) valueToGroups[v].push(m.g);
+    });
+  });
+  function groupsOf(v){ return valueToGroups[v] || [v]; }
+
+  /* build ordered unique group labels, with per-group counts */
+  var gSeen = {}, gVals = [], gCounts = {};
+  features.forEach(function(f){
+    var v = f.properties[field];
+    if(v == null || v === '') v = '(未填)';
+    v = String(v);
+    groupsOf(v).forEach(function(g){
+      if(!gSeen[g]){ gSeen[g] = true; gVals.push(g); gCounts[g] = 0; }
+      gCounts[g]++;
+    });
+  });
+  gVals.sort(function(a,b){ return a.localeCompare(b,'zh-Hant'); });
+  groupValues[field] = gVals;
+  groupCounts[field] = gCounts;
+  valueGroups[field] = groupsOf;
+
+  var titles = {place_name:'地點 place_name', photo_subject:'主題 photo_subject',
+                location_precision:'定位精度 location_precision'};
+  var div = document.createElement('div');
+  div.className = 'fgroup';
+  var html = '<div class="group-head" data-toggle>'+
+             '<span class="gtitle">'+esc(titles[field]||field)+'</span>'+
+             '<span class="group-actions">'+
+             '<button type="button" data-act="all">全選</button>'+
+             '<button type="button" data-act="none">清除</button></span></div>'+
+             '<div class="group-body">';
+  gVals.forEach(function(v){
+    html += '<label><input type="checkbox" checked data-field="'+esc(field)+'" value="'+esc(v)+'">'+
+            '<span class="glabel">'+esc(v)+'</span>'+
+            '<span class="num">'+gCounts[v]+'</span></label>';
+  });
+  html += '</div>';
+  div.innerHTML = html;
+  document.getElementById('filterGroups').appendChild(div);
+
+  checkboxes[field] = Array.prototype.slice.call(div.querySelectorAll('input[type=checkbox]'));
+
+  div.querySelector('.group-head').addEventListener('click', function(e){
+    if(e.target.tagName === 'BUTTON') return;
+    div.classList.toggle('collapsed');
+  });
+  div.querySelectorAll('.group-actions button').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var on = btn.getAttribute('data-act') === 'all';
+      checkboxes[field].forEach(function(cb){ cb.checked = on; });
+      applyFilters();
+    });
+  });
+  checkboxes[field].forEach(function(cb){
+    cb.addEventListener('change', applyFilters);
+  });
+});
+
+function visibleFeatures(){
+  return features.filter(function(f){
+    return FILTER_FIELDS.every(function(field){
+      var v = f.properties[field];
+      if(v == null || v === '') v = '(未填)';
+      v = String(v);
+      var groups = valueGroups[field] ? valueGroups[field](v) : [v];
+      return checkboxes[field].some(function(cb){ return cb.checked && groups.indexOf(cb.value) !== -1; });
+    });
+  });
+}
+
+var visibleMarkers = [];
+function applyFilters(){
+  var vis = visibleFeatures();
+  var visIdx = {};
+  vis.forEach(function(f){ visIdx[features.indexOf(f)] = true; });
+  visibleMarkers = markers.filter(function(m){ return visIdx[m._fid]; });
+  cluster.clearLayers();
+  cluster.addLayers(visibleMarkers);
+  document.getElementById('recordCount').textContent =
+    '目前顯示記錄數：' + vis.length + ' / ' + features.length;
+  /* clear selection if it is filtered out */
+  if(selectedId != null && !visIdx[selectedId]){ clearSelection(); }
+}
+
+document.getElementById('btnAll').addEventListener('click', function(){
+  FILTER_FIELDS.forEach(function(f){ checkboxes[f].forEach(function(cb){ cb.checked = true; }); });
+  applyFilters();
+});
+document.getElementById('btnClear').addEventListener('click', function(){
+  FILTER_FIELDS.forEach(function(f){ checkboxes[f].forEach(function(cb){ cb.checked = false; }); });
+  applyFilters();
+});
+
+/* raster toggles */
+document.querySelectorAll('.raster-cb').forEach(function(cb){
+  cb.addEventListener('change', function(){
+    var layer = rasterLayers[cb.getAttribute('data-raster')];
+    if(cb.checked){ if(!map.hasLayer(layer)) map.addLayer(layer); }
+    else{ if(map.hasLayer(layer)) map.removeLayer(layer); }
+  });
+});
+
+/* ================= Selection & right panel ================= */
+var selectedId = null;
+var selectedMarker = null;
+
+function clearSelection(){
+  if(selectedMarker){ selectedMarker.setStyle(baseStyle()); }
+  selectedId = null; selectedMarker = null;
+  highlightLayer.clearLayers();
+  document.getElementById('photoBox').innerHTML =
+    '<div class="placeholder">請點選地圖上的照片標記以顯示照片</div>';
+  document.getElementById('metaWrap').innerHTML =
+    '<div class="placeholder">尚未選取任何記錄</div>';
+}
+
+function selectFeature(i, fly){
+  if(selectedMarker){ selectedMarker.setStyle(baseStyle()); }
+  selectedId = i;
+  selectedMarker = markers[i];
+  selectedMarker.setStyle(selectedStyle());
+  /* bring to front within its cluster */
+  if(fly && map.getBounds && !map.getBounds().contains(selectedMarker.getLatLng())){
+    /* do not zoom; just pan if needed */
+  }
+  var c = selectedMarker.getLatLng();
+  highlightLayer.clearLayers();
+  highlightLayer.addLayer(L.circleMarker(c, {
+    radius:16, color:'#FFD700', weight:3, opacity:1,
+    fillColor:'#FFD700', fillOpacity:0.18, interactive:false, pane:'pane_pts'
+  }));
+
+  var f = features[i];
+  var p = f.properties;
+  var url = photoUrl(p.photo_path);
+  var photoBox = document.getElementById('photoBox');
+  if(url){
+    photoBox.innerHTML = '<img src="'+url+'" alt="'+esc(p.file_name)+'">';
+  }else{
+    photoBox.innerHTML = '<div class="placeholder">沒有照片路徑</div>';
+  }
+  var rows = FIELDS.map(function(k){
+    var v = p[k];
+    if(k === 'latitude' || k === 'longitude'){ v = (v == null ? '' : String(v)); }
+    return '<tr><th>'+esc(FIELD_LABELS[k])+'</th><td>'+esc(v == null ? '—' : v)+'</td></tr>';
+  }).join('');
+  document.getElementById('metaWrap').innerHTML =
+    '<table id="metaTable">'+rows+'</table>';
+}
+
+/* ================= init ================= */
+applyFilters();
+map.whenReady(function(){
+  setTimeout(function(){ map.invalidateSize(); }, 100);
+});
+})();
+</script>
+<script>
+/* font-size adjuster: 大 / 中 / 細 buttons in the header (added) */
+(function(){
+  var KEY = "fsz-b21";
+  var nav = document.querySelector(".iface-nav");
+  if (!nav) return;
+  function apply(k, save) {
+    document.body.setAttribute("data-fsz", k);
+    nav.querySelectorAll(".fsz-btn").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-fsz") === k);
+    });
+    if (save) { try { localStorage.setItem(KEY, k); } catch (e) {} }
+    if (window.map && map.invalidateSize) setTimeout(function () { map.invalidateSize(); }, 80);
+  }
+  ["S", "M", "L"].forEach(function (k) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "fsz-btn";
+    b.setAttribute("data-fsz", k);
+    b.textContent = { L: "大", M: "中", S: "細" }[k];
+    b.addEventListener("click", function () { apply(k, true); });
+    nav.insertBefore(b, nav.children[1] || null);  /* right of the 切換介面 button */
+  });
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved || "M", false);
+})();
+</script>
+</body>
+</html>
